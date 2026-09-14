@@ -1,0 +1,8 @@
+node_modules/
+www/
+*.bak-*
+ios-signing.key
+*.p12
+*.mobileprovision
+dist/
+tools/

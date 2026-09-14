@@ -1,0 +1,11 @@
+App/build
+App/Pods
+App/output
+DerivedData
+xcuserdata
+
+# Cordova plugins for Capacitor
+capacitor-cordova-ios-plugins
+
+# Web assets and generated config are committed on purpose:
+# ios-builder's CI runs xcodebuild only (no npm/cap sync). Run `npm run sync` before committing.

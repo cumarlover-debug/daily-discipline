@@ -1,0 +1,133 @@
+# Daily Discipline Dashboard — handoff notes
+
+Single-file dashboard. **`index.html` is the one and only source of truth** — everything (CSS, JS, the Supabase client) is inline in that one file. No build step, no server code. The old `daily-routine-dashboard.html` duplicate was deleted on 2026-09-09; don't reintroduce a mirror copy, it just creates drift about which file is current.
+
+## v9 — Focus layout rebuild (current build: `v8 — focus layout`, 2026-09-09)
+
+`index.html` was rebuilt from scratch in the **Focus tabs** layout after a round of design research and five interactive demos. Backup of the previous build sits alongside as `index.html.bak-20260909-104219`.
+
+**Layout** — the long vertical scroll is gone. Structure is now:
+1. Sticky topbar (logo, date + Hijri, theme toggle, log out)
+2. **Compact mixed-ring header** — 4 rings at 46px, labels *outside/below*. Completion and productivity are **continuous** sweeps (they're true percentages); fard and sunnah are **segmented arcs** (5 and 6 arcs — countable, since `2/5` shouldn't read as "40%").
+3. **Two-tone day bar** — `--border-2` fill = % of day elapsed, gradient fill = % completed. When completion trails elapsed by >8 points the right legend turns gold and says "behind".
+4. "Right now" card with per-second countdown.
+5. **Segmented control: Today / Prayers / Body / Stats.** Only one pane renders at a time.
+
+**Key structural changes**
+- **Sunnah nested inside prayer rows** — the prayer list is 5 rows, not 17. Each fard row carries gold dots showing its rawatib; tapping expands the jama'ah toggle + sunnah checkboxes. **The sunnah state keys are unchanged** (`before_fajr`, `before_dhuhr`, `after_dhuhr`, `after_maghrib`, `after_isha`) so all existing history stays readable — only the rendering nests them.
+- **Schedule collapses past and future.** Renders the current block + next 3; past becomes `▸ N earlier blocks · x/N done`, the rest `▸ N later blocks · ends …`. Both expand on tap. Mid-day this is ~5 rows instead of 15.
+- **Gym duration is now stepper pills** (0/30/45/60/75/90/120), not a slider — sliders are poor for a value that's always one of a few numbers, and bad on touch.
+- **Destructive actions moved** into the Stats tab (PDF / CSV / History / Reset), off the scroll flow and out of the thumb zone.
+- Streaks now compute a real **`best`** value from history alongside the current streak.
+
+**Schedule content change (user-requested)**
+- "English Practice" → **"Communication Skills"**
+- "Social Media / Notifications" → **"Doom scrolling"**
+- The two **swapped slots**: Doom scrolling now 21:10–22:10 (Rest), Communication Skills 22:10–23:10 (Productive).
+- ⚠️ These live in `DEFAULT_SCHEDULE`. If a saved schedule exists in `routine_config` or in `localStorage["routine-schedule-config"]`, it **overrides the defaults** and the old titles come back. `routine_config` was verified empty on 2026-09-09. To force the new defaults: Today tab → Edit → Restore default → Save.
+
+**Kept / restored**
+- Sheen sweep (now-card, streak cards, header), burst particles on every tick (gold for prayers/sunnah, green for tasks/gym), pulsing glow on the current row and a blue pulse on the next prayer. Emoji streak badges (🕌 💪 🔥) in colour-tinted tiles — deliberately kept against the research's advice, because the user finds them motivating. Prayers themselves are still **not** gamified (no points/badges/celebration on salah).
+- All of it wrapped in `@media (prefers-reduced-motion: reduce)`.
+- Full plumbing intact: Supabase auth (password + magic link), state sync w/ `user_id`, realtime, `routine_config` schedule sync, Aladhan prayer times, schedule editor, history modal, PDF, CSV, reset-with-undo, midnight rollover, light/dark theme.
+- Typography switched to **Inter** (loaded from Google Fonts) with `tabular-nums` — the app is dense with clock times and countdowns, so digits no longer jitter as they tick.
+
+**Not done (deliberate)** — the palette is unchanged from v7 so the layout could be judged on its own. The research's suggested ramp (`#0B0E13` surfaces, gold `#C9A227`, teal `#2DD4A7`) is still available as a separate pass.
+
+## v7 redesign (previous build: `v7-rings-streaks-editor`)
+
+Big design + feature pass over the v6 file. What's new:
+- **Sticky top bar** — logo, short date, live "now" chip ("Sleep · 38m left"), theme toggle, quick History button.
+- **Light + dark theme** — CSS tokens on `:root` with a `[data-theme="light"]` override; respects `prefers-color-scheme` on first load, choice saved to `localStorage` (`routine-theme`). Toggle in the top bar.
+- **Progress rings** replaced the flat bars on the 4 top stat cards (SVG `stroke-dashoffset`, `RING_CIRC` = 2π·26).
+- **"Right now" focus card** — shows the current schedule block with a live per-second countdown + progress bar (`refreshFocus()` on a 1s interval).
+- **Section identity** — each section has a colored top border + icon (blue schedule, gold prayers, green gym, purple reflection).
+- **Sections reordered**: stats → focus → schedule → prayers → gym → reflection → stats/streaks → actions.
+- **Stats & streaks section** (new): prayer/gym/80%-day **streaks**, a **7-day completion trend** (mini bars), and a **12-week consistency heatmap** (`color-mix` intensity by completion %). All computed client-side from `historyCache`, which `loadHistory()` fills with the last 120 days from Supabase on startup.
+- **Editable schedule** (new): pencil "Edit" button on the Schedule section opens a modal with per-row time pickers / title / productive toggle / delete + Add / Restore-default / Save. `SCHEDULE` is now **mutable**, loaded from config. Durations are derived from start/end via `diffLabel()` / `hoursOf()` (no more hardcoded `hours` field), so `TOTAL_PRODUCTIVE_HOURS` became `totalProductiveHours()`.
+- **Daily reflection** (new): mood emoji row (5) + free-text journal, stored on the day state as `mood` (0–4 index) and `note` (string). `normalizeDay()` handles their absence in old rows.
+- **CSV export** (new): "Export CSV" button dumps the last 120 days of computed stats as a CSV blob download.
+- **Undo on reset**: reset now shows a toast with an "Undo" action that restores the pre-reset snapshot.
+- **Auto day-rollover**: `checkRollover()` on a 30s interval reloads the page when the local date crosses midnight.
+
+### v7 data-model notes
+- **Schedule config is stored in the same `routine_state` table** under the sentinel key `task_date = "config:schedule"`, with `checked = { schedule: [...] }`. `loadHistory()` and `openHistory()` filter out any `task_date` starting with `config:`. Also cached in `localStorage` (`routine-schedule-config`). Editing schedule only affects today going forward; past days' `%` are recomputed against the *current* schedule (acceptable for a personal tracker — if you later want frozen-per-day schedules, snapshot the schedule into each day's state).
+- Day state shape is now `{ tasks, prayers, gym:{minutes,parts}, note, mood }`.
+
+## v8 — real auth + RLS lockdown (in progress)
+
+**The project had been PAUSED.** Supabase auto-paused the free-tier project, so the live dashboard had been silently stuck in "Offline (saved on this device)" mode. Restored on 2026-09-09 via MCP (`restore_project`) — status now `ACTIVE_HEALTHY`. If sync ever "just stops" again, **check the project isn't paused before debugging the client.**
+
+Surviving data at restore: **3 rows**, `2026-07-16` → `2026-07-24`. `auth.users` was empty.
+
+### Bug found and fixed
+The v7 editable-schedule sync wrote to `task_date = 'config:schedule'`, but `task_date` is a `date` column — that string can never be inserted, and the call was wrapped in an empty `.catch()`, so it failed silently. Schedule edits only ever reached `localStorage`. Replaced with a real `public.routine_config` table.
+
+### Client changes (done)
+- Hardcoded client-side username/password login **removed entirely**. Login is now Supabase Auth: email + password, with a "Create account" mode and an "Email me a sign-in link" (magic-link/OTP) fallback. `initAuth()` restores the session via `getSession()` and reacts to `onAuthStateChange`; logout calls `sb.auth.signOut()`.
+- `pushState()` now stamps `user_id` and upserts `onConflict: "user_id,task_date"`; it no-ops when signed out.
+- Schedule config moved to the `routine_config` table, keyed by `user_id`.
+
+### DB changes applied (phases 1 of 2)
+- `routine_state.user_id uuid references auth.users(id) on delete cascade` (nullable for now), plus an index.
+- `public.routine_config (user_id pk, schedule jsonb, updated_at)` — RLS on, single `own config` policy (`auth.uid() = user_id`), locked from birth.
+- `unique (user_id, task_date)` on `routine_state` — the upsert target PostgREST needs for `onConflict`.
+- **`routine_state` still has its three wide-open `public` policies** (`read`/`insert`/`update`, all `qual = true`) so the app keeps working until auth ships. This is deliberate — it is still insecure until phase 2.
+
+### Phase 2 — DONE (2026-09-09)
+Owner account: the app owner's email (kept out of this public repo). Applied as migration `lock_down_routine_state_rls`:
+1. Backfilled the 3 legacy rows (`user_id` was null) to the owner account.
+2. `user_id` is now `not null`.
+3. Primary key swapped from `task_date` alone to **`(user_id, task_date)`** — the old PK would have collided across accounts.
+4. The three wide-open `public` policies were **dropped**. Both tables now carry exactly one policy, `for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id)`.
+
+**Verified against the live REST API with the publishable key:**
+- anonymous `GET /routine_state` → `[]` (HTTP 200) — was previously returning every row
+- anonymous `POST` → `42501 new row violates row-level security policy` (HTTP 401)
+
+Data intact: 3 rows, 3 owned.
+
+### Remaining hardening (optional)
+- Public sign-ups are still open. Owner-only RLS means a stranger who registers sees **zero** of this data (they'd get their own empty tracker), so this is not a leak — but disabling sign-ups in **Authentication → Sign In / Providers** stops stray accounts entirely.
+- The publishable/anon key in page source is fine to expose — that is its intended use. RLS is what protects the data now, not key secrecy.
+
+### Known caveat from the v7 session
+- The in-app preview browser (Claude's sandbox) **can reach the Aladhan prayer API but not Supabase** (`wss://…supabase.co` → `ERR_NAME_NOT_RESOLVED`), so streaks/heatmap render empty there — they populate fine from real history on the deployed site. Also: the browser aggressively caches `index.html`; append a `?v=N` query when hard-refreshing during dev.
+
+## What it does
+
+- Motivation header: random Jim Rohn / Napoleon Hill quote on load (15 quotes in `QUOTES`).
+- Daily schedule: 15-item timeline from 06:30 to sleep, checkboxes, highlights the current task, animated stats.
+- Productivity score: sums hours on tasks flagged `productive: true` (workout + 5 study sessions + English) out of 12.5 total.
+- Prayers: 5 obligatory (Fajr/Dhuhr/Asr/Maghrib/Isha) each with a done checkbox and a Jama'ah/Alone toggle, plus the 12 sunnah rawatib slotted around them (2 before Fajr, 4 before Dhuhr, 2 after Dhuhr, 2 after Maghrib, 2 after Isha). Times come live from the Aladhan API and are cached in localStorage per day.
+- Gym: duration slider (0–180 min) plus body-part chips (Chest, Back, Shoulders, Biceps, Triceps, Legs, Abs/core, Cardio).
+- History modal: pulls past days from Supabase, computes stats client-side, expandable per-day detail.
+- PDF report button: builds a report (stats, prayers, sunnah, gym, schedule) via jsPDF + autotable.
+- Login gate: client-side only, a hardcoded username/password (removed in v8), stored in `localStorage`. **Not real security** — credentials are readable in page source. Fine as a privacy screen, not for anything sensitive.
+
+## Data model (Supabase)
+
+- Project ID: `wlcitzwvdcuhmwxzeqri` (org `cumarlover-debug's Org`, URL `https://wlcitzwvdcuhmwxzeqri.supabase.co`)
+- Publishable key is hardcoded in the file (`SUPABASE_KEY`) — it's an anon/publishable key, safe to expose client-side.
+- One table: `routine_state (task_date date primary key, checked jsonb, updated_at timestamptz)`.
+- A migration to split `prayers`/`gym` into their own columns was attempted but the SQL endpoint timed out and never completed — don't assume it ran. Everything currently lives nested inside the `checked` jsonb column as `{ tasks: {...}, prayers: {...}, gym: { minutes, parts: [...] } }`. `normalizeDay()` in the JS handles both the old flat shape and the new nested one, so this is safe as-is.
+- RLS policies are wide open (public select/insert/update, no auth) — intentional for a single-user personal tracker, but anyone with the URL and key could read or write the table. Don't reuse this table/project for anything more sensitive without locking it down.
+- Realtime is enabled on the table (`supabase_realtime` publication) so multiple open tabs/devices sync live.
+
+## Deployment (Netlify)
+
+- Site: `amir-daily-discipline`, ID `86bbe502-6bb6-4444-bac1-910d83db790d`, team `cumarlover-debug`.
+- Live URL: `https://amir-daily-discipline.netlify.app`
+- **No automated deploy path currently works** — the Netlify MCP connector's deploy tool expects a local CLI bridge with real network access, which this sandbox doesn't have (its outbound network is allowlisted and doesn't include Netlify's API). Every deploy so far has been manual: drag `index.html` onto `https://app.netlify.com/projects/amir-daily-discipline/deploys`. If you're picking this up in Claude Code with normal network access, the Netlify CLI (`npx @netlify/mcp` or plain `netlify deploy`) should work fine there.
+
+## Known gotchas from building this
+
+- This file is large (~1100+ lines) and editing it incrementally with a diff-based edit tool caused silent truncation more than once — the safe pattern that worked reliably was always rewriting the whole file in one shot, then verifying it with a headless JS render (jsdom) before shipping, rather than trusting a partial diff.
+- The two CDN scripts (jsPDF, jspdf-autotable from cdnjs; supabase-js from jsdelivr) mean the page needs internet on first load — no offline install/service worker.
+- Prayer times: Aladhan API, `address=Selangor,Malaysia`, `method=17` (JAKIM), `school=0` (standard/Shafi'i Asr). Chosen over Umm al-Qura because JAKIM matches local Malaysian mosque timetables (Umm al-Qura's fixed 90-min Isha offset runs ~18 min later than local jama'ah times).
+
+## Suggested next steps if continuing
+
+- ~~Move off the hardcoded login to Supabase Auth~~ — **done in v8** (client side). The remaining half is the phase 2 RLS lockdown above, which is blocked until the owner account exists.
+- If you want the `prayers`/`gym` data properly normalized into their own DB columns (rather than nested JSON), retry the migration — the SQL endpoint is reachable again now that the project is unpaused.
+- Note the file is now ~1626 lines. Targeted `Edit` calls with unique anchors worked reliably in the v8 session (no truncation), but a full rewrite is still the safest move for sweeping changes.
