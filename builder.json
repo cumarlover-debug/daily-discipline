@@ -1,0 +1,21 @@
+{
+  "project": "Discipline",
+  "platform": "ios",
+  "github": {
+    "owner": "cumarlover-debug",
+    "repo": "daily-discipline"
+  },
+  "provider": "github",
+  "codemagic": {},
+  "bitrise": {},
+  "ios": {
+    "path": "ios/App",
+    "scheme": "App"
+  },
+  "flutter": {
+    "watch": {}
+  },
+  "reactNative": {},
+  "kmp": {},
+  "mobai": {}
+}
