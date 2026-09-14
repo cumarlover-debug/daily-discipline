@@ -14,8 +14,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
@@ -35,6 +35,8 @@
     --heat-0:#e6eaf2; --sheen:rgba(0,0,0,0.035); --shadow:rgba(30,40,70,0.12);
   }
   *{box-sizing:border-box;}
+  html{overflow-x:hidden;}
+  body{overflow-x:clip;}
   body{
     margin:0;background:var(--bg);color:var(--text);min-height:100vh;
     font-family:'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -533,8 +535,8 @@
     try{
       const {data}=await sb.auth.getSession();
       if(data&&data.session&&data.session.user){ authUser=data.session.user; showDashboard(); }
-      else document.getElementById("email").focus();
-    }catch(e){ document.getElementById("email").focus(); }
+      else if(!matchMedia("(pointer: coarse)").matches) document.getElementById("email").focus();
+    }catch(e){ if(!matchMedia("(pointer: coarse)").matches) document.getElementById("email").focus(); }
     sb.auth.onAuthStateChange((event,session)=>{
       if(session&&session.user){ const first=!authUser; authUser=session.user; if(first) showDashboard(); }
       else if(event==="SIGNED_OUT") authUser=null;
