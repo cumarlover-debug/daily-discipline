@@ -246,7 +246,14 @@
   @keyframes tagPulse{0%,100%{opacity:1}50%{opacity:.5}}
 
   /* ---------- flourishes ---------- */
-  .nowcard::after,.st::after,.head::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+  .quote{background:linear-gradient(135deg,var(--panel-2),var(--panel));border:1px solid var(--border);border-left:3px solid var(--accent);
+    border-radius:13px;padding:12px 15px;margin-bottom:12px;position:relative;overflow:hidden;}
+  .quote-text{margin:0 0 6px;font-size:.93rem;line-height:1.45;font-weight:500;}
+  .quote-text::before{content:"\201C";} .quote-text::after{content:"\201D";}
+  .quote-author{font-size:.74rem;color:var(--accent);font-weight:700;}
+  .quote.faith{border-left-color:var(--gold);}
+  .quote.faith .quote-author{color:var(--gold);}
+  .nowcard::after,.st::after,.head::after,.quote::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
     background:linear-gradient(120deg,transparent,var(--sheen),transparent);animation:sheen 6s ease-in-out infinite;pointer-events:none;}
   .st::after{animation-duration:7.5s;}
   .st:nth-child(2)::after{animation-delay:.9s;} .st:nth-child(3)::after{animation-delay:1.8s;}
@@ -318,7 +325,7 @@
   .eacts{display:flex;gap:9px;justify-content:space-between;margin-top:13px;flex-wrap:wrap;}
 
   @media(prefers-reduced-motion:reduce){
-    .nowcard::after,.st::after,.head::after{animation:none;display:none;}
+    .nowcard::after,.st::after,.head::after,.quote::after{animation:none;display:none;}
     .row.now,.prow.next,.bg-blob,.sync-dot{animation:none;}
     .burst{display:none;}
     *{transition-duration:.01ms !important;}
@@ -374,6 +381,8 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
+
+  <div class="quote" id="quoteBox"><p class="quote-text" id="quoteText"></p><div class="quote-author" id="quoteAuthor"></div></div>
 
   <div class="head">
     <div class="rings" id="rings"></div>
@@ -621,20 +630,65 @@
 
   const PRAYER_LOCATION="Selangor,Malaysia", PRAYER_METHOD=17, PRAYER_SCHOOL=0;
 
+  // 52 quotes. Qur'an: Sahih International; hadith: sahih grading only. faith:true renders with the gold edge.
   const QUOTES=[
     {text:"Discipline is the bridge between goals and accomplishment.",author:"Jim Rohn"},
     {text:"We must all suffer one of two things: the pain of discipline or the pain of regret.",author:"Jim Rohn"},
     {text:"Success is nothing more than a few simple disciplines, practiced every day.",author:"Jim Rohn"},
     {text:"Either you run the day, or the day runs you.",author:"Jim Rohn"},
+    {text:"If you are not willing to risk the usual, you will have to settle for the ordinary.",author:"Jim Rohn"},
+    {text:"Affirmation without discipline is the beginning of delusion.",author:"Jim Rohn"},
     {text:"Don't wish it were easier; wish you were better.",author:"Jim Rohn"},
-    {text:"What you do today can improve all your tomorrows.",author:"Jim Rohn"},
-    {text:"Whatever the mind can conceive and believe, it can achieve.",author:"Napoleon Hill"},
+    {text:"Motivation is what gets you started. Habit is what keeps you going.",author:"Jim Rohn"},
+    {text:"Your life does not get better by chance, it gets better by change.",author:"Jim Rohn"},
+    {text:"Discipline is the foundation upon which all success is built. Lack of discipline inevitably leads to failure.",author:"Jim Rohn"},
+    {text:"Work harder on yourself than you do on your job.",author:"Jim Rohn"},
+    {text:"Time is more valuable than money. You can get more money, but you cannot get more time.",author:"Jim Rohn"},
+    {text:"You must either modify your dreams or magnify your skills.",author:"Jim Rohn"},
+    {text:"Whatever the mind of man can conceive and believe, it can achieve.",author:"Napoleon Hill"},
     {text:"Patience, persistence and perspiration make an unbeatable combination for success.",author:"Napoleon Hill"},
+    {text:"Do not wait: the time will never be “just right.” Start where you stand, and work with whatever tools you may have at your command.",author:"Napoleon Hill"},
     {text:"Effort only fully releases its reward after a person refuses to quit.",author:"Napoleon Hill"},
     {text:"The starting point of all achievement is desire.",author:"Napoleon Hill"},
-    {text:"Strength and growth come only through continuous effort and struggle.",author:"Napoleon Hill"}
+    {text:"Strength and growth come only through continuous effort and struggle.",author:"Napoleon Hill"},
+    {text:"Your big opportunity may be right where you are now.",author:"Napoleon Hill"},
+    {text:"Persistence is to the character of man as carbon is to steel.",author:"Napoleon Hill"},
+    {text:"Every adversity, every failure, every heartache carries with it the seed of an equal or greater benefit.",author:"Napoleon Hill"},
+    {text:"Before success comes in any man's life, he is sure to meet with much temporary defeat, and, perhaps, some failure.",author:"Napoleon Hill"},
+    {text:"Indeed, Allah will not change the condition of a people until they change what is in themselves.",author:"Qur'an",ref:"13:11",faith:true},
+    {text:"For indeed, with hardship will be ease. Indeed, with hardship will be ease.",author:"Qur'an",ref:"94:5–6",faith:true},
+    {text:"O you who have believed, seek help through patience and prayer. Indeed, Allah is with the patient.",author:"Qur'an",ref:"2:153",faith:true},
+    {text:"And that there is not for man except that for which he strives.",author:"Qur'an",ref:"53:39",faith:true},
+    {text:"Allah does not charge a soul except with that within its capacity.",author:"Qur'an",ref:"2:286",faith:true},
+    {text:"By time, indeed, mankind is in loss, except for those who have believed and done righteous deeds and advised each other to truth and advised each other to patience.",author:"Qur'an",ref:"103:1–3",faith:true},
+    {text:"And those who strive for Us – We will surely guide them to Our ways.",author:"Qur'an",ref:"29:69",faith:true},
+    {text:"O you who have believed, persevere and endure and remain stationed and fear Allah that you may be successful.",author:"Qur'an",ref:"3:200",faith:true},
+    {text:"So when you have finished your duties, then stand up for worship. And to your Lord direct your longing.",author:"Qur'an",ref:"94:7–8",faith:true},
+    {text:"My Lord, increase me in knowledge.",author:"Qur'an",ref:"20:114",faith:true},
+    {text:"And whoever relies upon Allah – then He is sufficient for him.",author:"Qur'an",ref:"65:3",faith:true},
+    {text:"The most beloved of deeds to Allah are the most consistent of them, even if they are few.",author:"Prophet Muhammad ﷺ",ref:"Bukhari 6464, Muslim 783",faith:true},
+    {text:"There are two blessings which many people lose: health and free time.",author:"Prophet Muhammad ﷺ",ref:"Bukhari 6412",faith:true},
+    {text:"The strong believer is better and more beloved to Allah than the weak believer, while there is good in both. Strive for that which will benefit you, seek the help of Allah, and do not feel helpless.",author:"Prophet Muhammad ﷺ",ref:"Muslim 2664",faith:true},
+    {text:"The strong is not the one who overcomes people by his strength, but the one who controls himself while in anger.",author:"Prophet Muhammad ﷺ",ref:"Bukhari 6114",faith:true},
+    {text:"Actions are judged by intentions.",author:"Prophet Muhammad ﷺ",ref:"Bukhari 1, Muslim 1907",faith:true},
+    {text:"Whoever takes a path in search of knowledge, Allah will make easy for him a path to Paradise.",author:"Prophet Muhammad ﷺ",ref:"Muslim 2699",faith:true},
+    {text:"Take advantage of five before five: your youth before your old age, your health before your sickness, your wealth before your poverty, your free time before your busyness, and your life before your death.",author:"Prophet Muhammad ﷺ",ref:"al-Hakim, sahih",faith:true},
+    {text:"If the Hour is established and one of you has a sapling in his hand, let him plant it.",author:"Prophet Muhammad ﷺ",ref:"Ahmad, sahih",faith:true},
+    {text:"You do not rise to the level of your goals. You fall to the level of your systems.",author:"James Clear",ref:"Atomic Habits"},
+    {text:"Every action you take is a vote for the type of person you wish to become.",author:"James Clear",ref:"Atomic Habits"},
+    {text:"Habits are the compound interest of self-improvement.",author:"James Clear",ref:"Atomic Habits"},
+    {text:"Never miss twice.",author:"James Clear",ref:"Atomic Habits"},
+    {text:"Discipline equals freedom.",author:"Jocko Willink"},
+    {text:"Don't count on motivation. Count on discipline.",author:"Jocko Willink",ref:"Discipline Equals Freedom"},
+    {text:"Discipline is destiny.",author:"Ryan Holiday"},
+    {text:"Ego is the enemy of what you want and of what you have.",author:"Ryan Holiday",ref:"Ego Is the Enemy"},
+    {text:"Enthusiasm is common. Endurance is rare.",author:"Angela Duckworth",ref:"Grit"},
+    {text:"Suffering is the true test of life.",author:"David Goggins",ref:"Can't Hurt Me"}
   ];
   let currentQuote=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  document.getElementById("quoteText").textContent=currentQuote.text;
+  document.getElementById("quoteAuthor").textContent="— "+currentQuote.author+(currentQuote.ref?" · "+currentQuote.ref:"");
+  document.getElementById("quoteBox").classList.toggle("faith",!!currentQuote.faith);
 
   // ================= helpers =================
   const toMin=t=>{const[h,m]=t.split(":").map(Number);return h*60+m;};
@@ -1166,6 +1220,8 @@
     toast("CSV downloaded");
   }
 
+  // jsPDF's built-in Helvetica only covers Latin-1: spell out ﷺ and drop diacritics (Rabīʿ -> Rabi)
+  const pdfSafe=t=>String(t).replace(/ﷺ/g,"(PBUH)").replace(/[ʿʾ]/g,"").normalize("NFKD").replace(/[̀-ͯ]/g,"");
   function generatePDF(){
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({unit:"pt",format:"a4"});
@@ -1176,7 +1232,7 @@
     doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(20);
     doc.text("Daily Discipline Report",M,42);
     doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(180,185,200);
-    doc.text(dateStr+(prayerTimes&&prayerTimes.hijri?"  ·  "+prayerTimes.hijri:""),M,62);
+    doc.text(dateStr+(prayerTimes&&prayerTimes.hijri?"  ·  "+pdfSafe(prayerTimes.hijri):""),M,62);
     const bY=118, bW=(W-M*2-24)/3;
     doc.setFillColor(245,250,248);
     doc.roundedRect(M,bY,bW,66,8,8,"F");
@@ -1228,10 +1284,10 @@
     const fy=doc.lastAutoTable.finalY+26;
     doc.setDrawColor(61,220,151); doc.setLineWidth(1); doc.line(M,fy,W-M,fy);
     doc.setFont("helvetica","italic"); doc.setFontSize(9.5); doc.setTextColor(60,65,75);
-    const q=doc.splitTextToSize(`"${currentQuote.text}"`,W-M*2);
+    const q=doc.splitTextToSize(`"${pdfSafe(currentQuote.text)}"`,W-M*2);
     doc.text(q,M,fy+20);
     doc.setFont("helvetica","normal"); doc.setTextColor(120,125,135);
-    doc.text(`— ${currentQuote.author}`,M,fy+20+q.length*12+6);
+    doc.text(pdfSafe(`— ${currentQuote.author}${currentQuote.ref?" · "+currentQuote.ref:""}`),M,fy+20+q.length*12+6);
     doc.setFontSize(8); doc.setTextColor(160,165,175);
     doc.text(`Generated ${new Date().toLocaleString()}`,M,doc.internal.pageSize.getHeight()-24);
     doc.save(`daily-report-${activeDay}.pdf`);
