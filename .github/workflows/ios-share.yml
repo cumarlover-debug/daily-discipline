@@ -76,6 +76,9 @@ jobs:
         uses: MobAI-App/mobai-ci@v1
         with:
           boot-sim: true # UDID lands in $MOBAI_SIM_UDID
+          # v1 cache held a corrupt simulator image (tar restore failed on a
+          # com.apple.Posters metadata file). Bump this again if boot fails the same way.
+          sim-cache-key: v2
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
