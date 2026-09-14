@@ -26,6 +26,13 @@ git add -A && git commit -m "..." && git push
 ### Install on the iPhone
 Unsigned `.ipa` + [MobAI](https://mobai.run) re-signing with a free Apple ID (use a separate iCloud account, per ios-builder's advice). iPhone needs **Developer Mode** on (Settings → Privacy & Security). **Free-Apple-ID installs expire after 7 days** — rebuild/reinstall weekly, or pay for the Apple Developer Program. No-expiry alternative: deploy `www/` to Netlify and use Safari → Share → Add to Home Screen.
 
+### Installed on the owner's iPhone (2026-09-15)
+- Installed via MobAI (`install_app`, `resign: true`) over USB. After re-signing, the bundle ID on the phone is **`com.dailydiscipline.tracker.NK5A5QSWJQ`** (free-Apple-ID team suffix) — use that ID for launching/automation.
+- Verified on the real device: launch, sign-in, and **session survives a force-quit + relaunch**.
+- MobAI wrote the signing material next to the IPA in `dist/` (`*-cert.pem`, `*-key.pem`, `*.mobileprovision`, `*-signed.ipa`). `dist/` is gitignored — **never commit these**. They allow an offline re-sign for the next reinstall (MobAI `install_app` `cert_path`/`key_path`/`profile_path`).
+- **MobAI signing gotcha:** the Apple ID is cached by MobAI's signer (`iloader-cli`); a login failure of *any* kind (even a network timeout to `gsa.apple.com`) **clears the cache**, after which installs fail with `no valid cached credentials`. MobAI only prompts for the Apple ID when its bridge app needs re-signing — to force the prompt, rename `%APPDATA%\mobairidge-ios-signed-<UDID>.ipa` and restart the device bridge in MobAI.
+- Free-Apple-ID install **expires after 7 days**.
+
 ### Gotchas found while testing in the iOS Simulator (all fixed)
 - **iOS auto-zooms inputs under 16px on focus.** Page grew 402→437px (×1.087 = 16/14.7). All inputs/textarea are 16px — keep them ≥16px.
 - **Password keyboard is invisible in MobAI's stream** — iOS hides secure-field keyboards from screen capture. The 👁 show-password toggle switches the field to text so it can be typed.
