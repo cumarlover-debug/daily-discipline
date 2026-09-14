@@ -30,7 +30,7 @@ Unsigned `.ipa` + [MobAI](https://mobai.run) re-signing with a free Apple ID (us
 - Installed via MobAI (`install_app`, `resign: true`) over USB. After re-signing, the bundle ID on the phone is **`com.dailydiscipline.tracker.NK5A5QSWJQ`** (free-Apple-ID team suffix) — use that ID for launching/automation.
 - Verified on the real device: launch, sign-in, and **session survives a force-quit + relaunch**.
 - MobAI wrote the signing material next to the IPA in `dist/` (`*-cert.pem`, `*-key.pem`, `*.mobileprovision`, `*-signed.ipa`). `dist/` is gitignored — **never commit these**. They allow an offline re-sign for the next reinstall (MobAI `install_app` `cert_path`/`key_path`/`profile_path`).
-- **MobAI signing gotcha:** the Apple ID is cached by MobAI's signer (`iloader-cli`); a login failure of *any* kind (even a network timeout to `gsa.apple.com`) **clears the cache**, after which installs fail with `no valid cached credentials`. MobAI only prompts for the Apple ID when its bridge app needs re-signing — to force the prompt, rename `%APPDATA%\mobairidge-ios-signed-<UDID>.ipa` and restart the device bridge in MobAI.
+- **MobAI signing gotcha:** the Apple ID is cached by MobAI's signer (`iloader-cli`); a login failure of *any* kind (even a network timeout to `gsa.apple.com`) **clears the cache**, after which installs fail with `no valid cached credentials`. MobAI only prompts for the Apple ID when its bridge app needs re-signing — to force the prompt, rename `%APPDATA%/mobai/bridge-ios-signed-<UDID>.ipa` and restart the device bridge in MobAI.
 - Free-Apple-ID install **expires after 7 days**.
 
 ### Gotchas found while testing in the iOS Simulator (all fixed)
